@@ -149,6 +149,7 @@
 #define STM32Gx_FLASH_CR_PNB (3)     /* Page number */
 #define STM32G0_FLASH_CR_PNG_LEN (5) /* STM32G0: 5 page number bits */
 #define STM32G4_FLASH_CR_PNG_LEN (7) /* STM32G4: 7 page number bits */
+#define STM32G4_FLASH_BKER (11)      /* Bank select for page erase */
 #define STM32Gx_FLASH_CR_MER2 (15)   /* Mass erase (2nd bank)*/
 #define STM32Gx_FLASH_CR_STRT (16)   /* Start */
 #define STM32Gx_FLASH_CR_OPTSTRT                                               \
@@ -2922,6 +2923,10 @@ int stlink_erase_flash_page(stlink_t *sl, stm32_addr_t flashaddr) {
       // sec 3.7.5 - PNB[6:0] is offset by 3. PER is 0x2.
       val &= ~(0x7F << 3);
       val |= ((flash_page & 0x7F) << 3) | (1 << FLASH_CR_PER);
+      // sec 3.7.6 - BKER set for bank 2 on CAT3 devices
+      if (sl->chip_id == STLINK_CHIPID_STM32_G4_CAT3 && flash_page >= 0x80) {
+          val |= (1U << STM32G4_FLASH_BKER);
+      }
       stlink_write_debug32(sl, STM32Gx_FLASH_CR, val);
     }
 
@@ -3535,7 +3540,7 @@ int stlink_write_flash(stlink_t *sl, stm32_addr_t addr, uint8_t *base,
   ILOG("Finished erasing %d pages of %u (%#x) bytes\n", page_count,
        (unsigned)(sl->flash_pgsz), (unsigned)(sl->flash_pgsz));
 
-  if (eraseonly) {
+  if (eraseonly || base == NULL) {
     return (0);
   }
 
