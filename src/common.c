@@ -3540,7 +3540,7 @@ int stlink_write_flash(stlink_t *sl, stm32_addr_t addr, uint8_t *base,
   ILOG("Finished erasing %d pages of %u (%#x) bytes\n", page_count,
        (unsigned)(sl->flash_pgsz), (unsigned)(sl->flash_pgsz));
 
-  if (eraseonly) {
+  if (eraseonly || base == NULL) {
     return (0);
   }
 
